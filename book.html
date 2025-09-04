@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Book — Two‑Page Layout</title>
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --panel: #111217;
+      --text: #e8e8ea;
+      --muted: #a3a3ad;
+      --accent: #6aa6ff;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: radial-gradient(1200px 800px at 70% -10%, #171a22 0%, var(--bg) 40%);
+      color: var(--text); font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    .wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 14px 16px; background: color-mix(in oklab, var(--panel) 90%, white 10%);
+      border: 1px solid #20222b; border-radius: var(--radius); box-shadow: var(--shadow);
+      position: sticky; top: 12px; z-index: 20; backdrop-filter: blur(6px);
+    }
+    .brand { font-weight: 700; letter-spacing: .3px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .btn {
+      background: #1a1b22; color: var(--text); border: 1px solid #2a2d38; border-radius: 12px;
+      padding: 10px 14px; cursor: pointer; transition: .15s transform, .15s background, .15s border-color;
+      display: inline-flex; align-items: center; gap: 8px; user-select: none;
+    }
+    .btn:hover { background: #202431; border-color: #384055; }
+    .btn:active { transform: translateY(1px); }
+    .btn[disabled] { opacity: .5; cursor: not-allowed; }
+    .pill {
+      padding: 8px 12px; background: #161821; border: 1px solid #2a2d38; border-radius: 999px; color: var(--muted);
+      display: inline-flex; align-items: center; gap: 8px; height: 38px;
+    }
+
+    .viewer {
+      margin-top: 16px; background: #0c0d13; border: 1px solid #1d1f27; border-radius: var(--radius);
+      box-shadow: var(--shadow); position: relative; overflow: hidden;
+    }
+    .stage {
+      position: relative; width: 100%; height: min(80vh, 900px); display: grid; place-items: center;
+      background: repeating-linear-gradient(45deg, #0e0f15, #0e0f15 16px, #0b0c12 16px, #0b0c12 32px);
+      isolation: isolate; overflow: hidden;
+    }
+    .spread {
+      position: relative; max-width: 100%; max-height: 100%; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,.45);
+      transform-origin: center; will-change: transform;
+    }
+    .spread img { display: block; max-width: 100%; max-height: 100%; border-radius: 12px; }
+
+    .toolbar { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; background: rgba(15,16,24,.7); border: 1px solid #2a2d38; border-radius: 999px;
+      padding: 8px; backdrop-filter: blur(6px); }
+
+    .counter { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+    .thumbs {
+      display: grid; grid-auto-flow: column; gap: 8px; overflow-x: auto; padding: 10px; border-top: 1px solid #1d1f27; background: #0b0c11;
+    }
+    .thumbs img { height: 84px; border-radius: 8px; border: 2px solid transparent; cursor: pointer; opacity: .85; }
+    .thumbs img[aria-current="true"] { border-color: var(--accent); opacity: 1; }
+
+    .hidden { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border-width: 0; }
+
+    @media (max-width: 640px) {
+      .btn span.label { display: none; }
+      .thumbs img { height: 64px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">📖 My Book</div>
+      <div class="controls">
+        <label class="btn" for="fileInput">⬆️ <span class="label">Load Images</span>
+          <input id="fileInput" type="file" accept="image/*" multiple class="sr-only" />
+        </label>
+        <button class="btn" id="prevBtn">⬅️ <span class="label">Prev</span></button>
+        <button class="btn" id="nextBtn">➡️ <span class="label">Next</span></button>
+        <span class="pill"><span id="counter" class="counter">0 / 0</span></span>
+        <button class="btn" id="zoomOut">➖ <span class="label">Zoom</span></button>
+        <input id="zoom" type="range" min="0.75" max="2.5" step="0.01" value="1" aria-label="Zoom" />
+        <button class="btn" id="zoomIn">➕ <span class="label">Zoom</span></button>
+        <button class="btn" id="toggleThumbs">🖼️ <span class="label">Thumbnails</span></button>
+        <button class="btn" id="fullBtn">⛶ <span class="label">Fullscreen</span></button>
+      </div>
+    </header>
+
+    <main class="viewer" id="viewer">
+      <div class="stage" id="stage" aria-live="polite">
+        <img id="spread" class="spread" alt="Book spread" />
+        <div class="toolbar">
+          <button class="btn" id="prevBtn2">⬅️ Prev</button>
+          <span class="pill"><span id="counter2" class="counter">0 / 0</span></span>
+          <button class="btn" id="nextBtn2">Next ➡️</button>
+        </div>
+      </div>
+      <div id="thumbRow" class="thumbs hidden" role="listbox" aria-label="Thumbnails"></div>
+    </main>
+
+    <section class="wrap" style="max-width:900px; margin: 18px auto; color: var(--muted)">
+      <h2 style="margin: 6px 0 6px 0; font-size: 18px; color: var(--text)">How to use</h2>
+      <ol>
+        <li>Take screenshots of your book so that <strong>each image contains two pages</strong> (left & right). Name them sequentially: <code>spread-01.jpg</code>, <code>spread-02.jpg</code>, …</li>
+        <li>Option A (fast preview without hosting): click <em>Load Images</em> and select all your JPG/PNG files. They will not upload anywhere; they render locally.</li>
+        <li>Option B (hosted): create a folder <code>/images/</code> next to this file and place your files there with names <code>spread-01.jpg</code> to <code>spread-35.jpg</code>. Then set <code>TOTAL_SPREADS</code> below.</li>
+        <li>Use keyboard <kbd>←</kbd>/<kbd>→</kbd> to navigate. Use the zoom slider or <em>+ / −</em>. Toggle thumbnails for quick jumps.</li>
+      </ol>
+    </section>
+  </div>
+
+  <script>
+    // ====== CONFIG (for hosted mode) ======
+    const TOTAL_SPREADS = 35;      // 69 pages ≈ 35 spreads (last may be single)
+    const IMAGE_PREFIX = 'images/spread-';
+    const IMAGE_EXT = '.jpg';      // change to .png if needed
+
+    // ====== STATE ======
+    const spreadEl = document.getElementById('spread');
+    const counter = document.getElementById('counter');
+    const counter2 = document.getElementById('counter2');
+    const stage = document.getElementById('stage');
+    const thumbRow = document.getElementById('thumbRow');
+    const zoomSlider = document.getElementById('zoom');
+
+    let spreads = []; // {src, name, blobUrl?}
+    let index = 0;    // 0-based
+    let scale = 1;    // zoom
+
+    // ====== HELPERS ======
+    function human(n){ return String(n).padStart(2,'0'); }
+    function setCounters(){
+      const t = spreads.length; const i = Math.min(index+1, t);
+      counter.textContent = `${i} / ${t}`;
+      counter2.textContent = `${i} / ${t}`;
+    }
+    function updateSpread(){
+      if(!spreads.length) return;
+      spreadEl.src = spreads[index].src;
+      spreadEl.alt = spreads[index].name || `Spread ${index+1}`;
+      [...thumbRow.querySelectorAll('img')].forEach((img, i)=>{
+        img.setAttribute('aria-current', i===index ? 'true' : 'false');
+      });
+      setCounters();
+      // Preload neighbors
+      [index-1, index+1].forEach(i=>{ if(i>=0 && i<spreads.length){ const img=new Image(); img.src=spreads[i].src; }});
+    }
+    function clampIndex(){ index = Math.max(0, Math.min(index, spreads.length-1)); }
+
+    // ====== LOADERS ======
+    function loadHosted(){
+      const arr = [];
+      for(let i=1;i<=TOTAL_SPREADS;i++){
+        const src = `${IMAGE_PREFIX}${human(i)}${IMAGE_EXT}`;
+        arr.push({src, name:`Spread ${i}`});
+      }
+      spreads = arr;
+      buildThumbs();
+      index = 0; updateSpread(); setCounters();
+    }
+
+    async function loadFromFiles(files){
+      const imgs = [...files].filter(f=>f.type.startsWith('image/'))
+        .sort((a,b)=> a.name.localeCompare(b.name, undefined, {numeric:true, sensitivity:'base'}));
+      spreads = await Promise.all(imgs.map(async f=>({
+        src: URL.createObjectURL(f), name: f.name
+      })));
+      buildThumbs(); index=0; updateSpread();
+    }
+
+    function buildThumbs(){
+      thumbRow.innerHTML = '';
+      spreads.forEach((sp, i)=>{
+        const img = document.createElement('img');
+        img.loading = 'lazy'; img.decoding = 'async'; img.src = sp.src; img.alt = sp.name;
+        img.addEventListener('click', ()=>{ index=i; updateSpread(); });
+        if(i===index) img.setAttribute('aria-current','true');
+        thumbRow.appendChild(img);
+      });
+      setCounters();
+    }
+
+    // ====== NAV ======
+    function prev(){ if(!spreads.length) return; index--; clampIndex(); updateSpread(); }
+    function next(){ if(!spreads.length) return; index++; clampIndex(); updateSpread(); }
+
+    document.getElementById('prevBtn').onclick = prev;
+    document.getElementById('nextBtn').onclick = next;
+    document.getElementById('prevBtn2').onclick = prev;
+    document.getElementById('nextBtn2').onclick = next;
+
+    document.addEventListener('keydown', (e)=>{
+      if(e.target.tagName === 'INPUT') return;
+      if(e.key === 'ArrowLeft') prev();
+      if(e.key === 'ArrowRight') next();
+      if(e.key === '+') { scale = Math.min(2.5, scale + 0.05); applyZoom(); }
+      if(e.key === '-') { scale = Math.max(0.75, scale - 0.05); applyZoom(); }
+    });
+
+    // ====== ZOOM & PAN ======
+    function applyZoom(){
+      zoomSlider.value = String(scale);
+      spreadEl.style.transform = `scale(${scale})`;
+    }
+    document.getElementById('zoomIn').onclick = ()=>{ scale = Math.min(2.5, scale + 0.1); applyZoom(); };
+    document.getElementById('zoomOut').onclick = ()=>{ scale = Math.max(0.75, scale - 0.1); applyZoom(); };
+    zoomSlider.oninput = (e)=>{ scale = parseFloat(e.target.value); applyZoom(); };
+
+    // Drag to pan when zoomed
+    let isDown=false, startX=0, startY=0, scrollLeft=0, scrollTop=0;
+    stage.style.overflow='auto';
+    stage.addEventListener('mousedown', (e)=>{
+      if(scale<=1) return; isDown=true; startX=e.pageX; startY=e.pageY; scrollLeft=stage.scrollLeft; scrollTop=stage.scrollTop; stage.style.cursor='grabbing';
+    });
+    window.addEventListener('mouseup', ()=>{ isDown=false; stage.style.cursor='default'; });
+    stage.addEventListener('mousemove', (e)=>{
+      if(!isDown) return; const dx=e.pageX-startX, dy=e.pageY-startY; stage.scrollLeft = scrollLeft - dx; stage.scrollTop = scrollTop - dy; });
+
+    // ====== FULLSCREEN ======
+    document.getElementById('fullBtn').onclick = ()=>{
+      const el = document.getElementById('viewer');
+      if(!document.fullscreenElement){ el.requestFullscreen?.(); } else { document.exitFullscreen?.(); }
+    };
+
+    // ====== THUMBS TOGGLE ======
+    document.getElementById('toggleThumbs').onclick = ()=>{
+      thumbRow.classList.toggle('hidden');
+    };
+
+    // ====== FILE INPUT (LOCAL MODE) ======
+    document.getElementById('fileInput').addEventListener('change', (e)=>{
+      loadFromFiles(e.target.files);
+    });
+
+    // ====== INITIAL LOAD ======
+    // Try hosted mode by default. If images fail, the first onerror will swap to an empty state.
+    function tryHosted(){
+      loadHosted();
+      // If first image 404s, let user use file loader (we keep thumbnails hidden until success)
+      spreadEl.onerror = ()=>{
+        spreads = []; setCounters();
+        thumbRow.innerHTML = '';
+        // show a hint
+        spreadEl.alt = 'Click "Load Images" to select your files';
+      };
+      updateSpread();
+    }
+    tryHosted();
+  </script>
+</body>
+</html>
